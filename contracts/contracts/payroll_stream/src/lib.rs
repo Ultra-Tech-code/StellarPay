@@ -69,7 +69,7 @@ impl PayrollStreamContract {
             id: stream_id,
             sender: sender.clone(),
             recipient: recipient.clone(),
-            token,
+            token: token.clone(),
             total_amount,
             claimed_amount: 0,
             start_time,
@@ -79,8 +79,12 @@ impl PayrollStreamContract {
             rate_per_second,
         };
 
-        // TODO: Transfer total_amount from sender to contract (contributor task SC-10)
-        // token::Client::new(&env, &token).transfer(&sender, &env.current_contract_address(), &total_amount);
+        // Transfer total_amount from sender to contract
+        let token_client = token::Client::new(&env, &token);
+        if token_client.balance(&sender) < total_amount {
+            return Err(StreamError::InvalidAmount);
+        }
+        token_client.transfer(&sender, &env.current_contract_address(), &total_amount);
 
         set_stream(&env, stream_id, &stream);
         set_stream_count(&env, stream_id + 1);
@@ -145,8 +149,12 @@ impl PayrollStreamContract {
                 rate_per_second,
             };
 
-            // TODO: Transfer total_amount from sender to contract (batch transfer optimization possible)
-            
+            // Transfer total_amount from sender to contract
+            let token_client = token::Client::new(&env, &token);
+            if token_client.balance(&sender) < total_amount {
+                return Err(StreamError::InvalidAmount);
+            }
+            token_client.transfer(&sender, &env.current_contract_address(), &total_amount);
             set_stream(&env, stream_id, &stream);
             add_sender_stream(&env, &sender, stream_id);
             add_recipient_stream(&env, &recipient, stream_id);
@@ -200,9 +208,12 @@ impl PayrollStreamContract {
             stream.status = StreamStatus::Completed;
         }
 
-        // TODO: Transfer claimable tokens to recipient (contributor task SC-11)
-        // token::Client::new(&env, &stream.token)
-        //     .transfer(&env.current_contract_address(), &recipient, &claimable);
+        // Transfer claimable tokens to recipient
+        let token_client = token::Client::new(&env, &stream.token);
+        if token_client.balance(&env.current_contract_address()) < claimable {
+            return Err(StreamError::NothingToClaim);
+        }
+        token_client.transfer(&env.current_contract_address(), &recipient, &claimable);
 
         set_stream(&env, stream_id, &stream);
 
