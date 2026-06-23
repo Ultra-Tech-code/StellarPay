@@ -34,7 +34,13 @@ fn test_create_stream() {
     let (env, admin, client) = setup_env();
     let sender = Address::generate(&env);
     let recipient = Address::generate(&env);
-    let token = Address::generate(&env);
+    
+    let token_admin = Address::generate(&env);
+    let token_admin_client = create_token_contract(&env, &token_admin);
+    let token = token_admin_client.address.clone();
+    let token_client = create_token_client(&env, &token);
+    
+    token_admin_client.mint(&sender, &10000);
 
     client.initialize(&admin);
 
@@ -56,13 +62,22 @@ fn test_create_stream() {
     assert_eq!(stream.total_amount, 10000);
     assert_eq!(stream.status, StreamStatus::Active);
     assert_eq!(stream.rate_per_second, 10); // 10000 / 1000 seconds
+    
+    assert_eq!(token_client.balance(&sender), 0);
+    assert_eq!(token_client.balance(&client.address), 10000);
 }
 
 #[test]
 fn test_create_batch_streams() {
     let (env, admin, client) = setup_env();
     let sender = Address::generate(&env);
-    let token = Address::generate(&env);
+    
+    let token_admin = Address::generate(&env);
+    let token_admin_client = create_token_contract(&env, &token_admin);
+    let token = token_admin_client.address.clone();
+    let token_client = create_token_client(&env, &token);
+    
+    token_admin_client.mint(&sender, &30000);
 
     client.initialize(&admin);
 
@@ -108,7 +123,13 @@ fn test_calculate_claimable() {
     let (env, admin, client) = setup_env();
     let sender = Address::generate(&env);
     let recipient = Address::generate(&env);
-    let token = Address::generate(&env);
+    
+    let token_admin = Address::generate(&env);
+    let token_admin_client = create_token_contract(&env, &token_admin);
+    let token = token_admin_client.address.clone();
+    let token_client = create_token_client(&env, &token);
+    
+    token_admin_client.mint(&sender, &10000);
 
     client.initialize(&admin);
 
@@ -132,6 +153,10 @@ fn test_calculate_claimable() {
 
     let claimable = client.get_claimable(&stream_id);
     assert_eq!(claimable, 5000); // 50% of 10000
+    
+    client.claim(&recipient, &stream_id);
+    assert_eq!(token_client.balance(&recipient), 5000);
+    assert_eq!(token_client.balance(&client.address), 5000);
 }
 
 fn create_token_contract<'a>(e: &Env, admin: &Address) -> token::StellarAssetClient<'a> {
