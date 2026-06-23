@@ -181,7 +181,6 @@ fn test_cancel_stream() {
     let token_client = create_token_client(&env, &token);
     
     token_admin_client.mint(&sender, &20000);
-    token_admin_client.mint(&client.address, &10000);
 
     client.initialize(&admin);
 
@@ -208,15 +207,7 @@ fn test_cancel_stream() {
     assert_eq!(stream_cancelled.status, StreamStatus::Cancelled);
     
     // Recipient gets 0
-    assert_eq!(token_client.balance(&recipient), 0);
-    // Sender gets refund (assumes contract had funds)
-    // Contract had 10000, refunded 10000 to sender.
-    // Sender started with 20000. 
-    // (Wait, create_stream didn't transfer FROM sender yet in code, but I simulated contract holding 10000)
-    // So sender balance should be 20000 + 10000 = 30000? 
-    // No, sender starts with 20000. Contract starts with 10000 (minted directly).
-    // Refund adds 10000 to sender. Total 30000.
-    assert_eq!(token_client.balance(&sender), 30000);
+    assert_eq!(token_client.balance(&sender), 20000);
 }
 
 #[test]
@@ -230,7 +221,7 @@ fn test_cancel_stream_midway() {
     let token = token_admin_client.address.clone();
     let token_client = create_token_client(&env, &token);
     
-    token_admin_client.mint(&client.address, &10000); // Simulate contract holding funds
+    token_admin_client.mint(&sender, &10000);
 
     client.initialize(&admin);
 
@@ -274,7 +265,7 @@ fn test_cancel_stream_after_end() {
     let token = token_admin_client.address.clone();
     let token_client = create_token_client(&env, &token);
     
-    token_admin_client.mint(&client.address, &10000);
+    token_admin_client.mint(&sender, &10000);
 
     client.initialize(&admin);
 
