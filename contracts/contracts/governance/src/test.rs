@@ -147,7 +147,6 @@ fn test_quorum_not_reached() {
 
 #[test]
 fn test_proposal_expiration_live_status() {
-fn test_cancel_proposal() {
     let (env, admin, client) = setup_env();
     let member1 = Address::generate(&env);
     let token = Address::generate(&env);
@@ -188,10 +187,17 @@ fn test_cancel_proposal() {
 }
 
 #[test]
-fn test_finalize_auto_reject_after_grace_period() {
+fn test_cancel_proposal() {
     let (env, admin, client) = setup_env();
     let member1 = Address::generate(&env);
-    client.initialize(&admin, &members, &51, &(7 * 24 * 60 * 60));
+    let token = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let mut members = Vec::new(&env);
+    members.push_back(member1.clone());
+
+    let voting_duration = 1000u64;
+    let grace_period = 500u64;
+    client.initialize(&admin, &members, &51, &voting_duration, &grace_period);
 
     let proposal_id = client.create_proposal(
         &member1,
@@ -213,11 +219,9 @@ fn test_finalize_auto_reject_after_grace_period() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #3)")] // Unauthorized is defined as code 3 in errors.rs
-fn test_cancel_proposal_unauthorized() {
+fn test_finalize_auto_reject_after_grace_period() {
     let (env, admin, client) = setup_env();
     let member1 = Address::generate(&env);
-    let non_proposer = Address::generate(&env);
     let token = Address::generate(&env);
     let recipient = Address::generate(&env);
     let mut members = Vec::new(&env);
@@ -250,9 +254,23 @@ fn test_cancel_proposal_unauthorized() {
     
     let proposal = client.get_proposal(&proposal_id);
     assert_eq!(proposal.status, ProposalStatus::Rejected);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #3)")] // Unauthorized is defined as code 3 in errors.rs
+fn test_cancel_proposal_unauthorized() {
+    let (env, admin, client) = setup_env();
+    let member1 = Address::generate(&env);
+    let non_proposer = Address::generate(&env);
+    let token = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let mut members = Vec::new(&env);
+    members.push_back(member1.clone());
     members.push_back(non_proposer.clone());
 
-    client.initialize(&admin, &members, &51, &(7 * 24 * 60 * 60));
+    let voting_duration = 1000u64;
+    let grace_period = 500u64;
+    client.initialize(&admin, &members, &51, &voting_duration, &grace_period);
 
     let proposal_id = client.create_proposal(
         &member1,
