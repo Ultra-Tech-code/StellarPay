@@ -206,7 +206,9 @@ fn test_cancel_proposal() {
     let mut members = Vec::new(&env);
     members.push_back(member1.clone());
 
-    client.initialize(&admin, &members, &51, &(7 * 24 * 60 * 60), &3600);
+    let voting_duration = 1000u64;
+    let grace_period = 500u64;
+    client.initialize(&admin, &members, &51, &voting_duration, &grace_period);
 
     env.ledger().with_mut(|li| {
         li.timestamp = 1000;
